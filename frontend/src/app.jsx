@@ -4,7 +4,7 @@ import axios from 'axios';
 
 // ⚠️ Cambia questo URL con quello ngrok del backend quando usi Telegram
 // Per test nel browser lascia localhost
-const API_URL = '';
+const API_URL = 'https://betting-app-9lkg.onrender.com';
 
 // Partite disponibili (le puoi cambiare a mano)
 const PARTITE = [
