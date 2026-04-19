@@ -4,9 +4,11 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const crypto = require('crypto');
+const path = require('path');
 
 const TOKEN = process.env.BOT_TOKEN;
 const MY_WALLET = process.env.MY_WALLET;
+const ODDS_API_KEY = process.env.ODDS_API_KEY;
 const PORT = process.env.PORT || 3000;
 
 const bot = new TelegramBot(TOKEN, { polling: true });
@@ -17,55 +19,58 @@ app.use((req, res, next) => {
   res.setHeader('ngrok-skip-browser-warning', 'true');
   next();
 });
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // -------------------------------------------------------
-// DATABASE IN MEMORIA (si azzera al riavvio, ok per test)
+// DATABASE
 // -------------------------------------------------------
-// Struttura:
-// usersDb[userId] = { balance: 0, processedHashes: [], bets: [] }
 let usersDb = {};
+let betsDb = [];
+let withdrawalsDb = [];
 
 function getUser(userId) {
   const id = String(userId);
   if (!usersDb[id]) {
-    usersDb[id] = { balance: 0, processedHashes: [], bets: [] };
+    usersDb[id] = {
+      balance: 0,
+      bonusBalance: 0,
+      bonusWagered: 0,
+      bonusTarget: 0,
+      bonusUsed: false,
+      processedHashes: [],
+      bets: [],
+      wallet: null
+    };
   }
   return usersDb[id];
 }
 
 // -------------------------------------------------------
-// VERIFICA FIRMA TELEGRAM (sicurezza)
+// BONUS BENVENUTO
 // -------------------------------------------------------
-function verifyTelegramData(initData) {
-  try {
-    if (!initData) return false;
-    const params = new URLSearchParams(initData);
-    const hash = params.get('hash');
-    params.delete('hash');
+function applyWelcomeBonus(userId, depositAmount) {
+  const user = getUser(userId);
+  if (user.bonusUsed) return 0;
 
-    const dataCheckString = [...params.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n');
+  const bonusAmount = Math.min(depositAmount, 100);
+  user.bonusBalance += bonusAmount;
+  user.bonusTarget = bonusAmount * 3; // wagering 3x
+  user.bonusWagered = 0;
+  user.bonusUsed = true;
 
-    const secretKey = crypto
-      .createHmac('sha256', 'WebAppData')
-      .update(TOKEN)
-      .digest();
+  bot.sendMessage(userId,
+    `🎁 *Bonus Benvenuto attivato!*\n\n` +
+    `Hai ricevuto *${bonusAmount}€* di bonus!\n` +
+    `Per sbloccarlo devi scommettere: *${user.bonusTarget}€*\n\n` +
+    `Il bonus verrà aggiunto al tuo saldo prelevabile una volta completato il wagering.`,
+    { parse_mode: 'Markdown' }
+  );
 
-    const expectedHash = crypto
-      .createHmac('sha256', secretKey)
-      .update(dataCheckString)
-      .digest('hex');
-
-    return hash === expectedHash;
-  } catch {
-    return false;
-  }
+  return bonusAmount;
 }
 
 // -------------------------------------------------------
-// CONTROLLA DEPOSITI SULLA BLOCKCHAIN TON
+// CONTROLLA DEPOSITI TON
 // -------------------------------------------------------
 async function checkDeposits(userId) {
   try {
@@ -94,16 +99,18 @@ async function checkDeposits(userId) {
         user.processedHashes.push(txHash);
         depositFound = true;
 
-        bot.sendMessage(userId,
-          `✅ Deposito confermato!\n` +
-          `+${amountTon.toFixed(2)} TON\n` +
-          `💰 Saldo attuale: ${user.balance.toFixed(2)} TON`
-        );
+        // Applica bonus solo al primo deposito
+        const bonus = applyWelcomeBonus(userId, amountTon);
 
-        console.log(`[DEPOSITO] Utente ${userId} → +${amountTon} TON (hash: ${txHash})`);
+        bot.sendMessage(userId,
+          `✅ *Deposito confermato!*\n` +
+          `+${amountTon.toFixed(2)} TON\n` +
+          `💰 Saldo: ${user.balance.toFixed(2)} TON` +
+          (bonus > 0 ? `\n🎁 Bonus: +${bonus.toFixed(2)} TON` : ''),
+          { parse_mode: 'Markdown' }
+        );
       }
     }
-
     return depositFound;
   } catch (err) {
     console.error('[ERRORE TON API]', err.message);
@@ -112,24 +119,56 @@ async function checkDeposits(userId) {
 }
 
 // -------------------------------------------------------
-// BOT TELEGRAM — COMANDI
+// ODDS API
+// -------------------------------------------------------
+async function getSports() {
+  try {
+    const res = await axios.get(`https://api.the-odds-api.com/v4/sports/`, {
+      params: { apiKey: ODDS_API_KEY }
+    });
+    // Filtriamo solo calcio e tennis
+    return res.data.filter(s =>
+      s.group === 'Soccer' || s.group === 'Tennis'
+    );
+  } catch (err) {
+    console.error('[ERRORE ODDS API sports]', err.message);
+    return [];
+  }
+}
+
+async function getOdds(sportKey) {
+  try {
+    const res = await axios.get(`https://api.the-odds-api.com/v4/sports/${sportKey}/odds/`, {
+      params: {
+        apiKey: ODDS_API_KEY,
+        regions: 'eu',
+        markets: 'h2h',
+        oddsFormat: 'decimal'
+      }
+    });
+    return res.data;
+  } catch (err) {
+    console.error('[ERRORE ODDS API odds]', err.message);
+    return [];
+  }
+}
+
+// -------------------------------------------------------
+// BOT TELEGRAM
 // -------------------------------------------------------
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  getUser(chatId); // crea utente se non esiste
+  getUser(chatId);
 
   bot.sendMessage(chatId,
     `🎰 *Benvenuto nella Bet App!*\n\n` +
-    `Qui puoi scommettere con i tuoi amici usando TON.\n\n` +
-    `Clicca il bottone qui sotto per aprire l'app.`,
+    `🎁 Primo deposito? Ricevi il 100% di bonus fino a 100 TON!\n\n` +
+    `Clicca il bottone per iniziare.`,
     {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [[
-          {
-            text: '🔥 Apri App Scommesse',
-            web_app: { url: process.env.FRONTEND_URL }
-          }
+          { text: '🔥 Apri App', web_app: { url: process.env.FRONTEND_URL } }
         ]]
       }
     }
@@ -140,90 +179,164 @@ bot.onText(/\/saldo/, async (msg) => {
   const chatId = msg.chat.id;
   await checkDeposits(chatId);
   const user = getUser(chatId);
-  bot.sendMessage(chatId, `💰 Il tuo saldo è: *${user.balance.toFixed(2)} TON*`, { parse_mode: 'Markdown' });
-});
-
-bot.onText(/\/scommesse/, (msg) => {
-  const chatId = msg.chat.id;
-  const user = getUser(chatId);
-
-  if (user.bets.length === 0) {
-    return bot.sendMessage(chatId, 'Non hai ancora piazzato scommesse.');
-  }
-
-  const lista = user.bets.map((b, i) =>
-    `${i + 1}. ${b.prediction} — ${b.amount} TON (${b.date})`
-  ).join('\n');
-
-  bot.sendMessage(chatId, `📋 *Le tue scommesse:*\n\n${lista}`, { parse_mode: 'Markdown' });
+  bot.sendMessage(chatId,
+    `💰 Saldo: *${user.balance.toFixed(2)} TON*\n` +
+    `🎁 Bonus: *${user.bonusBalance.toFixed(2)} TON*`,
+    { parse_mode: 'Markdown' }
+  );
 });
 
 // -------------------------------------------------------
-// API REST — usate dal frontend React
+// API
 // -------------------------------------------------------
 
-// GET /api/user/:id — dati utente + controlla nuovi depositi
 app.get('/api/user/:id', async (req, res) => {
   const userId = req.params.id;
   const user = getUser(userId);
-
   await checkDeposits(userId);
-
   res.json({
     balance: user.balance,
+    bonusBalance: user.bonusBalance,
+    bonusWagered: user.bonusWagered,
+    bonusTarget: user.bonusTarget,
+    bonusUsed: user.bonusUsed,
     depositAddress: MY_WALLET,
     memo: userId,
-    betsCount: user.bets.length
+    wallet: user.wallet
   });
 });
 
-// POST /api/bet — piazza una scommessa
+// Sports disponibili
+app.get('/api/sports', async (req, res) => {
+  const sports = await getSports();
+  res.json(sports);
+});
+
+// Quote per uno sport
+app.get('/api/odds/:sportKey', async (req, res) => {
+  const odds = await getOdds(req.params.sportKey);
+  // Quota minima 1.30
+  const filtered = odds.map(game => ({
+    ...game,
+    bookmakers: game.bookmakers.map(bm => ({
+      ...bm,
+      markets: bm.markets.map(market => ({
+        ...market,
+        outcomes: market.outcomes.map(o => ({
+          ...o,
+          price: Math.max(o.price, 1.30)
+        }))
+      }))
+    }))
+  }));
+  res.json(filtered);
+});
+
+// Piazza scommessa
 app.post('/api/bet', (req, res) => {
-  const { userId, amount, prediction, initData } = req.body;
+  const { userId, amount, prediction, odds, matchId, useBonus } = req.body;
 
-  // --- Decommenta questa riga quando vai in produzione ---
-  // if (!verifyTelegramData(initData)) return res.status(401).json({ error: 'Non autorizzato' });
-
-  if (!userId || !amount || !prediction) {
+  if (!userId || !amount || !prediction || !odds) {
     return res.status(400).json({ error: 'Dati mancanti' });
   }
 
   const user = getUser(userId);
 
-  if (amount <= 0) {
-    return res.json({ success: false, message: 'Importo non valido' });
-  }
+  if (amount <= 0) return res.json({ success: false, message: 'Importo non valido' });
 
-  if (user.balance < amount) {
+  // Usa bonus o saldo normale
+  if (useBonus && user.bonusBalance >= amount) {
+    user.bonusBalance -= amount;
+    user.bonusWagered += amount;
+
+    // Controlla se wagering completato
+    if (user.bonusWagered >= user.bonusTarget && user.bonusTarget > 0) {
+      user.balance += user.bonusBalance;
+      const sbloccato = user.bonusBalance;
+      user.bonusBalance = 0;
+      bot.sendMessage(userId,
+        `🎉 *Wagering completato!*\n+${sbloccato.toFixed(2)} TON aggiunti al saldo!`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+  } else if (user.balance >= amount) {
+    user.balance -= amount;
+    if (user.bonusUsed && user.bonusWagered < user.bonusTarget) {
+      user.bonusWagered += amount;
+    }
+  } else {
     return res.json({ success: false, message: 'Saldo insufficiente' });
   }
 
-  user.balance -= amount;
-  user.bets.push({
-    prediction,
+  const bet = {
+    id: Date.now(),
+    userId,
     amount,
-    date: new Date().toLocaleString('it-IT')
-  });
+    prediction,
+    odds,
+    matchId,
+    status: 'pending',
+    date: new Date().toLocaleString('it-IT'),
+    potentialWin: (amount * odds).toFixed(2)
+  };
 
-  console.log(`[BET] Utente ${userId} → ${amount} TON su "${prediction}" | Saldo rimasto: ${user.balance.toFixed(2)}`);
+  user.bets.push(bet);
+  betsDb.push(bet);
 
-  res.json({ success: true, newBalance: user.balance });
+  res.json({ success: true, newBalance: user.balance, newBonus: user.bonusBalance, bet });
 });
 
-// GET /api/admin — vedi tutti gli utenti (solo per debug locale)
-app.get('/api/admin', (req, res) => {
+// Richiesta prelievo
+app.post('/api/withdraw', (req, res) => {
+  const { userId, amount, wallet } = req.body;
+  const user = getUser(userId);
+
+  if (!wallet) return res.json({ success: false, message: 'Inserisci wallet TON' });
+  if (amount <= 0) return res.json({ success: false, message: 'Importo non valido' });
+  if (user.balance < amount) return res.json({ success: false, message: 'Saldo insufficiente' });
+
+  user.wallet = wallet;
+  user.balance -= amount;
+
+  const withdrawal = {
+    id: Date.now(),
+    userId,
+    amount,
+    wallet,
+    status: 'pending',
+    date: new Date().toLocaleString('it-IT')
+  };
+
+  withdrawalsDb.push(withdrawal);
+
+  // Notifica admin (te)
+  const ADMIN_ID = process.env.ADMIN_ID;
+  if (ADMIN_ID) {
+    bot.sendMessage(ADMIN_ID,
+      `💸 *Nuova richiesta prelievo!*\n\n` +
+      `👤 Utente: ${userId}\n` +
+      `💰 Importo: ${amount} TON\n` +
+      `👛 Wallet: \`${wallet}\``,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  res.json({ success: true, message: 'Richiesta inviata! Elaboreremo entro 24h.' });
+});
+
+// Admin — vedi prelievi pendenti
+app.get('/api/admin/withdrawals', (req, res) => {
+  res.json(withdrawalsDb.filter(w => w.status === 'pending'));
+});
+
+// Admin — vedi tutti gli utenti
+app.get('/api/admin/users', (req, res) => {
   res.json(usersDb);
 });
 
-// -------------------------------------------------------
-// AVVIO SERVER
-// -------------------------------------------------------
-// Servi il frontend dal backend
-const path = require('path');
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
 app.listen(PORT, () => {
   console.log(`✅ Backend attivo su http://localhost:${PORT}`);
   console.log(`🔑 Bot token: ${TOKEN ? 'caricato' : '⚠️ MANCANTE'}`);
-  console.log(`💳 Wallet: ${MY_WALLET ? MY_WALLET : '⚠️ MANCANTE'}`);
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || '⚠️ non impostato'}`);
+  console.log(`💳 Wallet: ${MY_WALLET || '⚠️ MANCANTE'}`);
+  console.log(`🎲 Odds API: ${ODDS_API_KEY ? 'caricata' : '⚠️ MANCANTE'}`);
 });
