@@ -19,10 +19,42 @@ const SPORT_GROUPS = [
 ];
 
 const CRYPTO_METHODS = [
-  { symbol: 'USDT', name: 'Tether', icon: '💵', color: '#26a17b', desc: 'TRC20 / ERC20' },
-  { symbol: 'USDC', name: 'USD Coin', icon: '🔵', color: '#2775ca', desc: 'ERC20 / Solana' },
-  { symbol: 'BTC', name: 'Bitcoin', icon: '₿', color: '#f7931a', desc: '~30 min' },
-  { symbol: 'ETH', name: 'Ethereum', icon: '⟠', color: '#627eea', desc: 'ERC20' },
+  {
+    symbol: 'USDT',
+    name: 'Tether',
+    icon: '💵',
+    color: '#26a17b',
+    desc: 'TRC20 / ERC20',
+    address: 'INDIRIZZO_USDT_QUI',
+    network: '⚠️ Rete: TRC20 (Tron) oppure ERC20 (Ethereum)'
+  },
+  {
+    symbol: 'USDC',
+    name: 'USD Coin',
+    icon: '🔵',
+    color: '#2775ca',
+    desc: 'ERC20 / Solana',
+    address: 'INDIRIZZO_USDC_QUI',
+    network: '⚠️ Rete: ERC20 (Ethereum) oppure Solana'
+  },
+  {
+    symbol: 'BTC',
+    name: 'Bitcoin',
+    icon: '₿',
+    color: '#f7931a',
+    desc: '~30 min',
+    address: 'INDIRIZZO_BTC_QUI',
+    network: '⚠️ Rete: Bitcoin mainnet'
+  },
+  {
+    symbol: 'ETH',
+    name: 'Ethereum',
+    icon: '⟠',
+    color: '#627eea',
+    desc: 'ERC20',
+    address: 'INDIRIZZO_ETH_QUI',
+    network: '⚠️ Rete: ERC20 (Ethereum)'
+  },
 ];
 
 export default function App() {
@@ -120,9 +152,11 @@ export default function App() {
   const wagPct = user?.bonusTarget > 0
     ? Math.min((user.bonusWagered / user.bonusTarget) * 100, 100) : 0;
 
+  const cryptoSelezionata = CRYPTO_METHODS.find(c => c.symbol === selectedCrypto);
+
   if (loading) return (
     <div style={s.fullCenter}>
-      <div style={s.spinner}>🎰</div>
+      <div style={{ fontSize: 48 }}>🎰</div>
       <p style={{ color: '#94a3b8', marginTop: 12 }}>Caricamento...</p>
     </div>
   );
@@ -134,7 +168,7 @@ export default function App() {
       {showBonus && (
         <div style={s.overlay}>
           <div style={s.modal}>
-            <div style={{ textAlign: 'center', marginBottom: 8 }}>
+            <div style={{ textAlign: 'center' }}>
               <span style={{ fontSize: 52 }}>🎁</span>
             </div>
             <div style={s.bonusTag}>BENVENUTO</div>
@@ -142,18 +176,15 @@ export default function App() {
             <div style={s.bonusPercent}>100%</div>
             <div style={s.bonusAmount}>fino a 200€</div>
             <div style={s.bonusSub}>sul primo deposito in crypto</div>
-
             <div style={s.bonusPoints}>
               <div style={s.bonusPoint}>✅ Deposita e ricevi il doppio</div>
-              <div style={s.bonusPoint}>✅ Usabile subito su tutte le scommesse</div>
-              <div style={s.bonusPoint}>✅ Quota minima: <strong style={{color:'#facc15'}}>1.30</strong></div>
+              <div style={s.bonusPoint}>✅ Usabile su tutte le scommesse</div>
+              <div style={s.bonusPoint}>✅ Quota minima: <strong style={{ color: '#facc15' }}>1.30</strong></div>
               <div style={s.bonusPoint}>✅ Wagering: gioca deposito + bonus x1</div>
             </div>
-
             <div style={s.tac}>
               <p style={s.tacText}>📋 T&C: Il bonus è pari al 100% del primo deposito in crypto fino a 200€. Per sbloccarlo devi giocare l'importo totale (deposito + bonus) su quote ≥1.30. Esempio: depositi 100€ → ricevi 100€ bonus → gioca 200€ totali su quote ≥1.30 → bonus sbloccato e prelevabile. Un solo bonus per utente.</p>
             </div>
-
             <button style={s.btnGreen} onClick={() => { setShowBonus(false); setTab('deposita'); }}>
               💰 DEPOSITA ORA
             </button>
@@ -178,7 +209,7 @@ export default function App() {
       {/* ===== BANNER BONUS ===== */}
       {!user?.bonusUsed && (
         <div style={s.topBanner} onClick={() => setShowBonus(true)}>
-          🎁 <strong>BONUS 100%</strong> fino a 200€ sul primo deposito! <span style={{color:'#facc15'}}>→</span>
+          🎁 <strong>BONUS 100%</strong> fino a 200€ sul primo deposito! <span style={{ color: '#facc15' }}>→</span>
         </div>
       )}
 
@@ -190,7 +221,8 @@ export default function App() {
           { key: 'deposita', icon: '📥', label: 'Deposita' },
           { key: 'preleva', icon: '💸', label: 'Preleva' },
         ].map(t => (
-          <button key={t.key} style={{ ...s.tabBtn, ...(tab === t.key ? s.tabActive : {}) }}
+          <button key={t.key}
+            style={{ ...s.tabBtn, ...(tab === t.key ? s.tabActive : {}) }}
             onClick={() => setTab(t.key)}>
             <span style={s.tabIcon}>{t.icon}</span>
             <span style={s.tabLabel}>{t.label}</span>
@@ -201,7 +233,6 @@ export default function App() {
       {/* ===== TAB SPORT ===== */}
       {tab === 'sport' && (
         <div>
-          {/* Importo bet */}
           <div style={s.card}>
             <p style={s.cardTitle}>Importo scommessa</p>
             <div style={s.row}>
@@ -223,7 +254,6 @@ export default function App() {
             )}
           </div>
 
-          {/* Lista campionati */}
           {!selectedSport && (
             <div>
               <p style={s.sectionHead}>Seleziona campionato</p>
@@ -236,7 +266,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Partite */}
           {selectedSport && (
             <div>
               <div style={s.searchBar}>
@@ -245,13 +274,10 @@ export default function App() {
                   value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                   style={s.searchInput} />
               </div>
-
               {oddsLoading && <p style={s.emptyText}>⏳ Caricamento quote...</p>}
-
               {!oddsLoading && filteredOdds.length === 0 && (
                 <p style={s.emptyText}>{searchQuery ? '🔍 Nessun risultato' : '📭 Nessuna partita disponibile'}</p>
               )}
-
               {!oddsLoading && filteredOdds.map(match => {
                 const outcomes = match.bookmakers?.[0]?.markets?.[0]?.outcomes || [];
                 return (
@@ -268,7 +294,7 @@ export default function App() {
                             {o.name === match.home_team ? '1' : o.name === match.away_team ? '2' : 'X'}
                           </span>
                           <span style={s.oddPrice}>{o.price.toFixed(2)}</span>
-                          <span style={s.oddTeam}>{o.name.length > 10 ? o.name.slice(0,10)+'…' : o.name}</span>
+                          <span style={s.oddTeam}>{o.name.length > 10 ? o.name.slice(0, 10) + '…' : o.name}</span>
                         </button>
                       ))}
                     </div>
@@ -296,7 +322,6 @@ export default function App() {
               </button>
             </div>
           )}
-
           <div style={s.card}>
             <p style={s.cardTitle}>📋 Condizioni Bonus</p>
             <div style={s.tacBox}>
@@ -309,7 +334,6 @@ export default function App() {
               <p style={s.tacLine}>⚠️ Un solo bonus per account</p>
             </div>
           </div>
-
           {user?.bonusUsed && (
             <div style={s.card}>
               <p style={s.cardTitle}>🎁 Il tuo bonus</p>
@@ -332,7 +356,7 @@ export default function App() {
         <div>
           {!user?.bonusUsed && (
             <div style={s.topBanner} onClick={() => setShowBonus(true)}>
-              🎁 <strong>Primo deposito?</strong> Ricevi il 100% di bonus fino a 200€! <span style={{color:'#facc15'}}>→</span>
+              🎁 <strong>Primo deposito?</strong> Ricevi il 100% di bonus fino a 200€! <span style={{ color: '#facc15' }}>→</span>
             </div>
           )}
 
@@ -358,19 +382,21 @@ export default function App() {
           </div>
 
           <div style={s.card}>
-            <p style={s.cardTitle}>📥 Come depositare in {selectedCrypto}</p>
-            <div style={s.depositInfo}>
-              <p style={{ color: '#facc15', fontSize: 13, marginBottom: 10 }}>
-                Per depositare in {selectedCrypto}:
-              </p>
-              <p style={s.depStep}>1️⃣ Scrivi al supporto nel bot con /supporto</p>
-              <p style={s.depStep}>2️⃣ Indica crypto e importo che vuoi depositare</p>
-              <p style={s.depStep}>3️⃣ Ricevi l'indirizzo corretto per il bonifico</p>
-              <p style={s.depStep}>4️⃣ Invia la transazione e manda l'hash al supporto</p>
-              <p style={{ color: '#4ade80', fontSize: 12, marginTop: 10 }}>
-                ✅ Accredito entro 30-60 min dalla conferma blockchain
-              </p>
-            </div>
+            <p style={s.cardTitle}>📥 Deposita {selectedCrypto}</p>
+            <p style={s.depStep}>1️⃣ Copia l'indirizzo qui sotto</p>
+            <div style={s.addressBox}>{cryptoSelezionata.address}</div>
+            <button style={s.btnCopy} onClick={() => {
+              navigator.clipboard.writeText(cryptoSelezionata.address);
+              toast('📋 Indirizzo copiato!');
+            }}>📋 Copia indirizzo</button>
+            <p style={{ ...s.small, marginTop: 12, color: '#facc15' }}>
+              {cryptoSelezionata.network}
+            </p>
+            <p style={{ ...s.depStep, marginTop: 12 }}>2️⃣ Invia l'importo desiderato</p>
+            <p style={s.depStep}>3️⃣ Manda l'hash della transazione al supporto con /supporto</p>
+            <p style={{ color: '#4ade80', fontSize: 12, marginTop: 10 }}>
+              ✅ Accredito entro 30-60 min dalla conferma blockchain
+            </p>
           </div>
 
           <div style={s.card}>
@@ -386,13 +412,13 @@ export default function App() {
         <div>
           {user?.bonusUsed && wagPct < 100 && (
             <div style={s.warnBox}>
-              ⚠️ Hai un bonus attivo ({wagPct.toFixed(0)}% wagering). Il bonus sarà prelevabile dopo il completamento.
+              ⚠️ Hai un bonus attivo ({wagPct.toFixed(0)}% wagering completato). Il bonus sarà prelevabile dopo il completamento.
             </div>
           )}
           <div style={s.card}>
             <p style={s.cardTitle}>💸 Richiedi prelievo</p>
-            <p style={s.small}>Saldo disponibile: <strong style={{color:'#4ade80'}}>{user?.balance?.toFixed(2)}€</strong></p>
-            <p style={{ ...s.small, marginTop: 14 }}>Il tuo wallet (TON / USDT / altro):</p>
+            <p style={s.small}>Saldo disponibile: <strong style={{ color: '#4ade80' }}>{user?.balance?.toFixed(2)}€</strong></p>
+            <p style={{ ...s.small, marginTop: 14 }}>Il tuo wallet (USDT / BTC / ETH / altro):</p>
             <input type="text" placeholder="Incolla il tuo indirizzo wallet"
               value={withdrawWallet} onChange={e => setWithdrawWallet(e.target.value)}
               style={s.wideInput} />
@@ -412,6 +438,23 @@ export default function App() {
         </div>
       )}
 
+      {/* ===== FOOTER ADM ===== */}
+      <div style={s.footer}>
+        <div style={s.admBadge}>
+          <div style={s.admLeft}>
+            <div style={s.admShield}>🏛️</div>
+            <div>
+              <div style={s.admTitle}>ADM</div>
+              <div style={s.admSub}>Agenzia Dogane e Monopoli</div>
+            </div>
+          </div>
+        </div>
+        <p style={s.admText}>
+          Il gioco è vietato ai minori di 18 anni e può causare dipendenza patologica.
+        </p>
+        <p style={s.admText}>Gioca responsabilmente. 18+</p>
+      </div>
+
       {/* ===== TOAST ===== */}
       {msg && (
         <div style={{ ...s.toast, background: msgType === 'ok' ? '#15803d' : '#991b1b' }}>
@@ -424,12 +467,9 @@ export default function App() {
 }
 
 const s = {
-  page: { fontFamily: "'Arial', sans-serif", background: '#0f172a', minHeight: '100vh', color: 'white', paddingBottom: 80 },
+  page: { fontFamily: "'Arial', sans-serif", background: '#0f172a', minHeight: '100vh', color: 'white', paddingBottom: 40 },
   fullCenter: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0f172a' },
-  spinner: { fontSize: 48 },
-
-  // Modal
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflowY: 'auto' },
   modal: { background: '#1e293b', borderRadius: 20, padding: 24, width: '100%', maxWidth: 380, border: '1px solid #334155' },
   bonusTag: { textAlign: 'center', color: '#94a3b8', fontSize: 13, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 4 },
   bonusBig: { textAlign: 'center', fontSize: 52, fontWeight: '900', color: '#facc15', lineHeight: 1, letterSpacing: 2 },
@@ -440,29 +480,19 @@ const s = {
   bonusPoint: { fontSize: 13, color: '#cbd5e1', marginBottom: 6 },
   tac: { background: '#0f172a', borderRadius: 10, padding: 12, marginBottom: 16 },
   tacText: { fontSize: 10, color: '#64748b', lineHeight: 1.6, margin: 0 },
-
-  // Header
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#1e293b', borderBottom: '1px solid #334155', position: 'sticky', top: 0, zIndex: 100 },
   logo: { fontSize: 17, fontWeight: 'bold' },
   balRow: { display: 'flex', gap: 6 },
   balChip: { background: '#065f46', color: '#4ade80', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 'bold' },
   bonChip: { background: '#713f12', color: '#facc15', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 'bold' },
-
-  // Banner
   topBanner: { background: 'linear-gradient(90deg, #92400e, #b45309)', padding: '10px 16px', fontSize: 13, cursor: 'pointer', textAlign: 'center' },
-
-  // Tabs
   tabBar: { display: 'flex', background: '#1e293b', borderBottom: '1px solid #334155', position: 'sticky', top: 49, zIndex: 99 },
   tabBtn: { flex: 1, padding: '8px 4px', background: 'transparent', color: '#64748b', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
   tabActive: { color: 'white', borderBottom: '2px solid #3b82f6' },
   tabIcon: { fontSize: 18 },
   tabLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 },
-
-  // Cards
   card: { background: '#1e293b', margin: '10px 12px', borderRadius: 14, padding: 16, border: '1px solid #334155' },
   cardTitle: { fontWeight: 'bold', color: '#cbd5e1', fontSize: 14, marginBottom: 12 },
-
-  // Sport
   sectionHead: { color: '#64748b', fontSize: 12, padding: '6px 16px', textTransform: 'uppercase', letterSpacing: 1 },
   sportRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: 'calc(100% - 24px)', margin: '4px 12px', padding: '13px 16px', background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: 10, cursor: 'pointer', fontSize: 14 },
   arrow: { color: '#4ade80', fontSize: 20 },
@@ -478,8 +508,6 @@ const s = {
   oddSide: { fontSize: 15, fontWeight: 'bold', color: '#60a5fa' },
   oddPrice: { fontSize: 19, fontWeight: '900', color: '#4ade80' },
   oddTeam: { fontSize: 8, color: '#64748b', textAlign: 'center' },
-
-  // Bonus tab
   bonusBannerCard: { background: 'linear-gradient(135deg, #713f12, #1e3a5f)', margin: '10px 12px', borderRadius: 14, padding: 20, border: '1px solid #92400e' },
   bonusBig2: { textAlign: 'center', fontSize: 36, fontWeight: '900', color: '#facc15', letterSpacing: 2 },
   bonusAmt2: { textAlign: 'center', fontSize: 28, fontWeight: '800', color: '#4ade80', marginBottom: 4 },
@@ -491,23 +519,18 @@ const s = {
   progFill: { background: 'linear-gradient(90deg, #3b82f6, #06b6d4)', height: '100%', borderRadius: 10, transition: 'width 0.4s' },
   wagPct: { color: '#64748b', fontSize: 11, textAlign: 'right', marginTop: 4 },
   bonusUnlocked: { color: '#4ade80', fontWeight: 'bold', marginTop: 10, textAlign: 'center' },
-
-  // Crypto
   cryptoGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 8 },
   cryptoCard: { padding: '14px 8px', background: '#0f172a', border: '2px solid #334155', borderRadius: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, transition: 'all 0.2s' },
   cryptoIcon: { fontSize: 26 },
   cryptoSym: { color: 'white', fontWeight: 'bold', fontSize: 14 },
   cryptoName: { color: '#94a3b8', fontSize: 11 },
   cryptoDesc: { color: '#64748b', fontSize: 10 },
-  depositInfo: { background: '#0f172a', borderRadius: 10, padding: 14, border: '1px solid #334155' },
+  addressBox: { background: '#0f172a', padding: 10, borderRadius: 8, fontSize: 11, wordBreak: 'break-all', color: '#94a3b8', border: '1px solid #334155', marginTop: 8, marginBottom: 8 },
+  btnCopy: { padding: '8px 16px', background: '#334155', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
   depStep: { fontSize: 13, color: '#cbd5e1', marginBottom: 8, lineHeight: 1.5 },
   bigBalance: { fontSize: 36, fontWeight: '900', color: '#4ade80', margin: '4px 0 12px' },
-
-  // Prelievo
   warnBox: { background: '#422006', margin: '10px 12px', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#fbbf24', border: '1px solid #92400e' },
   wideInput: { width: '100%', padding: 10, background: '#0f172a', color: 'white', border: '1px solid #475569', borderRadius: 8, fontSize: 13, marginTop: 6, boxSizing: 'border-box' },
-
-  // Shared
   row: { display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 },
   numInput: { width: 80, padding: '8px 10px', background: '#0f172a', color: 'white', border: '1px solid #475569', borderRadius: 8, fontSize: 16 },
   unit: { color: '#64748b', fontSize: 14 },
@@ -518,5 +541,12 @@ const s = {
   btnGreen: { width: '100%', padding: 14, background: 'linear-gradient(90deg, #059669, #0d9488)', color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 'bold', fontSize: 15, marginBottom: 8 },
   btnBlue: { width: '100%', padding: 12, background: '#1d4ed8', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 'bold', fontSize: 14 },
   btnGray: { width: '100%', padding: 10, background: '#334155', color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13 },
+  footer: { margin: '24px 12px 20px', padding: '16px', borderTop: '1px solid #334155', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
+  admBadge: { background: '#1e293b', border: '1px solid #1e3a8a', borderRadius: 12, padding: '12px 20px', display: 'flex', alignItems: 'center' },
+  admLeft: { display: 'flex', alignItems: 'center', gap: 12 },
+  admShield: { fontSize: 32 },
+  admTitle: { color: '#1d4ed8', fontWeight: '900', fontSize: 20, letterSpacing: 3 },
+  admSub: { color: '#94a3b8', fontSize: 10, letterSpacing: 1 },
+  admText: { color: '#475569', fontSize: 10, textAlign: 'center', lineHeight: 1.5, margin: 0 },
   toast: { position: 'fixed', bottom: 20, left: 16, right: 16, padding: '13px 16px', borderRadius: 12, textAlign: 'center', fontWeight: 'bold', fontSize: 14, zIndex: 9999 },
 };
