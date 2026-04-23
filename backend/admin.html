@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — Bet App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: white; }
+    .login { display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .login-box { background: #1e293b; padding: 32px; border-radius: 16px; width: 320px; border: 1px solid #334155; }
+    .login-box h2 { text-align: center; margin-bottom: 20px; color: #facc15; }
+    input { width: 100%; padding: 10px; background: #0f172a; color: white; border: 1px solid #334155; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+    button { width: 100%; padding: 12px; background: #1d4ed8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; }
+    button:hover { background: #2563eb; }
+    .panel { display: none; }
+    .header { background: #1e293b; padding: 16px 24px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 20px; color: #facc15; }
+    .tabs { display: flex; gap: 8px; padding: 16px 24px; background: #1e293b; border-bottom: 1px solid #334155; }
+    .tab { padding: 8px 18px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+    .tab.active { background: #1d4ed8; }
+    .content { padding: 20px 24px; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #334155; }
+    .card h3 { margin-bottom: 14px; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; color: #64748b; border-bottom: 1px solid #334155; }
+    td { padding: 10px 12px; border-bottom: 1px solid #1e293b; }
+    tr:hover td { background: #0f172a; }
+    .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+    .badge.pending { background: #713f12; color: #facc15; }
+    .badge.won { background: #065f46; color: #4ade80; }
+    .badge.lost { background: #7f1d1d; color: #f87171; }
+    .badge.completed { background: #1e3a8a; color: #60a5fa; }
+    .btn-sm { padding: 5px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .btn-green { background: #059669; color: white; }
+    .btn-red { background: #dc2626; color: white; }
+    .btn-blue { background: #1d4ed8; color: white; }
+    .credit-form { display: grid; gap: 10px; }
+    .credit-form input { margin: 0; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat { background: #1e293b; border-radius: 10px; padding: 16px; border: 1px solid #334155; text-align: center; }
+    .stat-value { font-size: 28px; font-weight: 900; color: #4ade80; }
+    .stat-label { font-size: 11px; color: #64748b; margin-top: 4px; text-transform: uppercase; }
+    .alert { padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
+    .alert-ok { background: #065f46; color: #4ade80; }
+    .alert-err { background: #7f1d1d; color: #f87171; }
+    select { width: 100%; padding: 10px; background: #0f172a; color: white; border: 1px solid #334155; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="loginPage">
+  <div class="login-box">
+    <h2>🔐 Admin Panel</h2>
+    <input type="password" id="secretInput" placeholder="Password admin" />
+    <button onclick="doLogin()">Accedi</button>
+    <div id="loginErr" style="color:#f87171;text-align:center;margin-top:10px;font-size:13px;"></div>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div class="panel" id="panel">
+  <div class="header">
+    <h1>🎰 Bet App — Admin</h1>
+    <button onclick="logout()" style="width:auto;padding:8px 16px;background:#334155;font-size:13px;">Esci</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+    <button class="tab" onclick="showTab('users')">👤 Utenti</button>
+    <button class="tab" onclick="showTab('bets')">🎯 Scommesse</button>
+    <button class="tab" onclick="showTab('withdrawals')">💸 Prelievi</button>
+    <button class="tab" onclick="showTab('credit')">💰 Carica Saldo</button>
+  </div>
+
+  <div class="content">
+    <div id="alertBox"></div>
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="tab-dashboard">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="stat-users">-</div>
+          <div class="stat-label">Utenti totali</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-bets">-</div>
+          <div class="stat-label">Scommesse</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-pending-w">-</div>
+          <div class="stat-label">Prelievi pendenti</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-volume">-</div>
+          <div class="stat-label">Volume €</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Azioni rapide</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-sm btn-blue" style="padding:10px 20px;font-size:14px;" onclick="forceSettle()">🔄 Forza controllo risultati</button>
+          <button class="btn-sm btn-green" style="padding:10px 20px;font-size:14px;" onclick="loadAll()">🔃 Aggiorna tutto</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- UTENTI -->
+    <div class="section" id="tab-users">
+      <div class="card">
+        <h3>Tutti gli utenti</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Telegram ID</th>
+              <th>Saldo €</th>
+              <th>Bonus €</th>
+              <th>Wagering</th>
+              <th>Registrato</th>
+              <th>Azione</th>
+            </tr>
+          </thead>
+          <tbody id="usersTable">
+            <tr><td colspan="6" style="text-align:center;color:#64748b;">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCOMMESSE -->
+    <div class="section" id="tab-bets">
+      <div class="card">
+        <h3>Ultime 100 scommesse</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Utente</th>
+              <th>Partita</th>
+              <th>Pronostico</th>
+              <th>Importo</th>
+              <th>Quota</th>
+              <th>Vincita pot.</th>
+              <th>Stato</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody id="betsTable">
+            <tr><td colspan="8" style="text-align:center;color:#64748b;">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PRELIEVI -->
+    <div class="section" id="tab-withdrawals">
+      <div class="card">
+        <h3>Prelievi pendenti</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Utente</th>
+              <th>Importo</th>
+              <th>Wallet</th>
+              <th>Data</th>
+              <th>Azione</th>
+            </tr>
+          </thead>
+          <tbody id="withdrawalsTable">
+            <tr><td colspan="5" style="text-align:center;color:#64748b;">Caricamento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CARICA SALDO -->
+    <div class="section" id="tab-credit">
+      <div class="card">
+        <h3>Carica saldo manuale</h3>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:16px;">
+          Usa questa funzione quando un utente ti invia crypto e vuoi accreditargli il saldo.
+        </p>
+        <div class="credit-form">
+          <div>
+            <label style="font-size:12px;color:#94a3b8;">Telegram ID utente:</label>
+            <input type="text" id="creditUserId" placeholder="Es: 123456789" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:#94a3b8;">Importo da accreditare (€):</label>
+            <input type="number" id="creditAmount" placeholder="Es: 100" min="0.01" step="0.01" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:#94a3b8;">Nota (opzionale):</label>
+            <input type="text" id="creditNote" placeholder="Es: Deposito USDT TRC20" />
+          </div>
+          <button onclick="doCredit()" style="background:#059669;">💰 Accredita saldo</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Carica saldo rapido da lista utenti</h3>
+        <div class="credit-form">
+          <div>
+            <label style="font-size:12px;color:#94a3b8;">Seleziona utente:</label>
+            <select id="creditUserSelect">
+              <option value="">-- Seleziona --</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#94a3b8;">Importo (€):</label>
+            <input type="number" id="creditAmountQuick" placeholder="Es: 50" min="0.01" step="0.01" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:#94a3b8;">Nota:</label>
+            <input type="text" id="creditNoteQuick" placeholder="Es: Deposito BTC" />
+          </div>
+          <button onclick="doCreditQuick()" style="background:#059669;">💰 Accredita</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = '';
+let SECRET = '';
+let allUsers = [];
+
+function doLogin() {
+  const s = document.getElementById('secretInput').value;
+  if (!s) return;
+  SECRET = s;
+  loadAll();
+}
+
+function logout() {
+  SECRET = '';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('panel').style.display = 'none';
+}
+
+function showAlert(msg, type = 'ok') {
+  const box = document.getElementById('alertBox');
+  box.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(() => box.innerHTML = '', 4000);
+}
+
+function showTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+async function apiFetch(url, options = {}) {
+  const res = await fetch(API + url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-secret': SECRET,
+      ...options.headers
+    }
+  });
+  return res.json();
+}
+
+async function loadAll() {
+  try {
+    const [users, bets, withdrawals] = await Promise.all([
+      apiFetch('/api/admin/users'),
+      apiFetch('/api/admin/bets'),
+      apiFetch('/api/admin/withdrawals')
+    ]);
+
+    if (users.error) {
+      document.getElementById('loginErr').textContent = 'Password errata';
+      return;
+    }
+
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('panel').style.display = 'block';
+
+    allUsers = users;
+
+    // Stats
+    document.getElementById('stat-users').textContent = users.length;
+    document.getElementById('stat-bets').textContent = bets.length;
+    document.getElementById('stat-pending-w').textContent = withdrawals.length;
+    const volume = bets.reduce((acc, b) => acc + b.amount, 0);
+    document.getElementById('stat-volume').textContent = volume.toFixed(0) + '€';
+
+    // Utenti
+    const usersHtml = users.map(u => `
+      <tr>
+        <td><code>${u.telegramId}</code></td>
+        <td style="color:#4ade80;font-weight:bold;">${u.balance.toFixed(2)}€</td>
+        <td style="color:#facc15;">${u.bonusBalance.toFixed(2)}€</td>
+        <td style="color:#94a3b8;">${u.bonusWagered.toFixed(2)}/${u.bonusTarget.toFixed(2)}€</td>
+        <td style="color:#64748b;">${new Date(u.createdAt).toLocaleDateString('it-IT')}</td>
+        <td>
+          <button class="btn-sm btn-green" onclick="quickCredit('${u.telegramId}')">+ Saldo</button>
+        </td>
+      </tr>
+    `).join('');
+    document.getElementById('usersTable').innerHTML = usersHtml || '<tr><td colspan="6" style="text-align:center;color:#64748b;">Nessun utente</td></tr>';
+
+    // Select utenti per carica saldo
+    const selectHtml = users.map(u => `<option value="${u.telegramId}">${u.telegramId} (${u.balance.toFixed(2)}€)</option>`).join('');
+    document.getElementById('creditUserSelect').innerHTML = '<option value="">-- Seleziona --</option>' + selectHtml;
+
+    // Scommesse
+    const betsHtml = bets.map(b => `
+      <tr>
+        <td><code>${b.userId}</code></td>
+        <td style="font-size:11px;">${b.homeTeam || '?'} vs ${b.awayTeam || '?'}</td>
+        <td>${b.prediction}</td>
+        <td>${b.amount.toFixed(2)}€</td>
+        <td>${b.odds}</td>
+        <td style="color:#4ade80;">${b.potentialWin.toFixed(2)}€</td>
+        <td><span class="badge ${b.status}">${b.status}</span></td>
+        <td style="color:#64748b;font-size:11px;">${new Date(b.date).toLocaleString('it-IT')}</td>
+      </tr>
+    `).join('');
+    document.getElementById('betsTable').innerHTML = betsHtml || '<tr><td colspan="8" style="text-align:center;color:#64748b;">Nessuna scommessa</td></tr>';
+
+    // Prelievi
+    const wHtml = withdrawals.map(w => `
+      <tr>
+        <td><code>${w.userId}</code></td>
+        <td style="color:#4ade80;font-weight:bold;">${w.amount.toFixed(2)}€</td>
+        <td style="font-size:11px;word-break:break-all;max-width:200px;">${w.wallet}</td>
+        <td style="color:#64748b;font-size:11px;">${new Date(w.date).toLocaleString('it-IT')}</td>
+        <td>
+          <button class="btn-sm btn-green" onclick="confirmWithdrawal('${w._id}')">✅ Confermato</button>
+        </td>
+      </tr>
+    `).join('');
+    document.getElementById('withdrawalsTable').innerHTML = wHtml || '<tr><td colspan="5" style="text-align:center;color:#64748b;">Nessun prelievo pendente</td></tr>';
+
+  } catch (err) {
+    document.getElementById('loginErr').textContent = 'Errore di connessione';
+    console.error(err);
+  }
+}
+
+async function doCredit() {
+  const userId = document.getElementById('creditUserId').value.trim();
+  const amount = parseFloat(document.getElementById('creditAmount').value);
+  const note = document.getElementById('creditNote').value.trim();
+
+  if (!userId || !amount || amount <= 0) return showAlert('⚠️ Inserisci ID e importo validi', 'err');
+
+  const res = await apiFetch('/api/admin/credit', {
+    method: 'POST',
+    body: JSON.stringify({ userId, amount, note })
+  });
+
+  if (res.success) {
+    showAlert(`✅ Accreditati ${amount}€ all'utente ${userId}. Nuovo saldo: ${res.newBalance.toFixed(2)}€`);
+    document.getElementById('creditAmount').value = '';
+    document.getElementById('creditNote').value = '';
+    loadAll();
+  } else {
+    showAlert('❌ ' + (res.error || 'Errore'), 'err');
+  }
+}
+
+async function doCreditQuick() {
+  const userId = document.getElementById('creditUserSelect').value;
+  const amount = parseFloat(document.getElementById('creditAmountQuick').value);
+  const note = document.getElementById('creditNoteQuick').value.trim();
+
+  if (!userId || !amount || amount <= 0) return showAlert('⚠️ Seleziona utente e importo', 'err');
+
+  const res = await apiFetch('/api/admin/credit', {
+    method: 'POST',
+    body: JSON.stringify({ userId, amount, note })
+  });
+
+  if (res.success) {
+    showAlert(`✅ Accreditati ${amount}€ all'utente ${userId}`);
+    loadAll();
+  } else {
+    showAlert('❌ ' + (res.error || 'Errore'), 'err');
+  }
+}
+
+function quickCredit(userId) {
+  document.getElementById('creditUserId').value = userId;
+  showTab('credit');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab')[4].classList.add('active');
+}
+
+async function confirmWithdrawal(id) {
+  if (!confirm('Confermi di aver inviato il pagamento?')) return;
+  const res = await apiFetch('/api/admin/withdrawal/confirm', {
+    method: 'POST',
+    body: JSON.stringify({ withdrawalId: id })
+  });
+  if (res.success) {
+    showAlert('✅ Prelievo confermato e utente notificato');
+    loadAll();
+  }
+}
+
+async function forceSettle() {
+  showAlert('🔄 Controllo risultati in corso...');
+  const res = await apiFetch('/api/admin/settle', { method: 'POST' });
+  if (res.success) showAlert('✅ ' + res.message);
+}
+</script>
+</body>
+</html>
