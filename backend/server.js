@@ -75,6 +75,9 @@ app.use(express.static(path.join(__dirname, '../frontend/dist')));
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
 // -------------------------------------------------------
 // FUNZIONI UTILI
 // -------------------------------------------------------
