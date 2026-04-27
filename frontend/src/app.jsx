@@ -19,42 +19,10 @@ const SPORT_GROUPS = [
 ];
 
 const CRYPTO_METHODS = [
-  {
-    symbol: 'USDT',
-    name: 'Tether',
-    icon: '💵',
-    color: '#26a17b',
-    desc: 'TRC20 / ERC20',
-    address: 'INDIRIZZO_USDT_QUI',
-    network: '⚠️ Rete: TRC20 (Tron) oppure ERC20 (Ethereum)'
-  },
-  {
-    symbol: 'USDC',
-    name: 'USD Coin',
-    icon: '🔵',
-    color: '#2775ca',
-    desc: 'ERC20 / Solana',
-    address: 'INDIRIZZO_USDC_QUI',
-    network: '⚠️ Rete: ERC20 (Ethereum) oppure Solana'
-  },
-  {
-    symbol: 'BTC',
-    name: 'Bitcoin',
-    icon: '₿',
-    color: '#f7931a',
-    desc: '~30 min',
-    address: 'INDIRIZZO_BTC_QUI',
-    network: '⚠️ Rete: Bitcoin mainnet'
-  },
-  {
-    symbol: 'ETH',
-    name: 'Ethereum',
-    icon: '⟠',
-    color: '#627eea',
-    desc: 'ERC20',
-    address: 'INDIRIZZO_ETH_QUI',
-    network: '⚠️ Rete: ERC20 (Ethereum)'
-  },
+  { symbol: 'USDT', name: 'Tether', icon: '💵', color: '#26a17b', desc: 'TRC20 / ERC20', address: 'INDIRIZZO_USDT_QUI', network: '⚠️ Rete: TRC20 (Tron) o ERC20 (Ethereum)' },
+  { symbol: 'USDC', name: 'USD Coin', icon: '🔵', color: '#2775ca', desc: 'ERC20 / Solana', address: 'INDIRIZZO_USDC_QUI', network: '⚠️ Rete: ERC20 (Ethereum) o Solana' },
+  { symbol: 'BTC', name: 'Bitcoin', icon: '₿', color: '#f7931a', desc: '~30 min', address: 'INDIRIZZO_BTC_QUI', network: '⚠️ Rete: Bitcoin mainnet' },
+  { symbol: 'ETH', name: 'Ethereum', icon: '⟠', color: '#627eea', desc: 'ERC20', address: 'INDIRIZZO_ETH_QUI', network: '⚠️ Rete: ERC20 (Ethereum)' },
 ];
 
 export default function App() {
@@ -125,8 +93,10 @@ export default function App() {
     try {
       const res = await axios.post(`${API_URL}/api/bet`, {
         userId: user.id, amount: betAmount, prediction: outcome,
-        odds: oddValue, matchId: match.id, useBonus,
-        initData: window.Telegram?.WebApp?.initData || ''
+        odds: oddValue, matchId: match.id,
+        homeTeam: match.home_team, awayTeam: match.away_team,
+        commenceTime: match.commence_time,
+        useBonus, initData: window.Telegram?.WebApp?.initData || ''
       });
       if (res.data.success) {
         setUser(p => ({ ...p, balance: res.data.newBalance, bonusBalance: res.data.newBonus }));
@@ -168,12 +138,10 @@ export default function App() {
       {showBonus && (
         <div style={s.overlay}>
           <div style={s.modal}>
-            <div style={{ textAlign: 'center' }}>
-              <span style={{ fontSize: 52 }}>🎁</span>
-            </div>
+            <div style={{ textAlign: 'center' }}><span style={{ fontSize: 52 }}>🎁</span></div>
             <div style={s.bonusTag}>BENVENUTO</div>
             <div style={s.bonusBig}>BONUS</div>
-            <div style={s.bonusPercent}>100%</div>
+            <div style={s.bonusPercent}>200%</div>
             <div style={s.bonusAmount}>fino a 200€</div>
             <div style={s.bonusSub}>sul primo deposito in crypto</div>
             <div style={s.bonusPoints}>
@@ -183,14 +151,12 @@ export default function App() {
               <div style={s.bonusPoint}>✅ Wagering: gioca deposito + bonus x1</div>
             </div>
             <div style={s.tac}>
-              <p style={s.tacText}>📋 T&C: Il bonus è pari al 100% del primo deposito in crypto fino a 200€. Per sbloccarlo devi giocare l'importo totale (deposito + bonus) su quote ≥1.30. Esempio: depositi 100€ → ricevi 100€ bonus → gioca 200€ totali su quote ≥1.30 → bonus sbloccato e prelevabile. Un solo bonus per utente.</p>
+              <p style={s.tacText}>📋 T&C: Il bonus è pari al 200% del primo deposito in crypto fino a 200€. Per sbloccarlo devi giocare l'importo totale (deposito + bonus) su quote ≥1.30. Esempio: depositi 100€ → ricevi 200€ bonus → gioca 300€ totali su quote ≥1.30 → bonus sbloccato e prelevabile. Un solo bonus per utente.</p>
             </div>
             <button style={s.btnGreen} onClick={() => { setShowBonus(false); setTab('deposita'); }}>
               💰 DEPOSITA ORA
             </button>
-            <button style={s.btnGray} onClick={() => setShowBonus(false)}>
-              Chiudi
-            </button>
+            <button style={s.btnGray} onClick={() => setShowBonus(false)}>Chiudi</button>
           </div>
         </div>
       )}
@@ -200,16 +166,14 @@ export default function App() {
         <span style={s.logo}>🎰 Bet App</span>
         <div style={s.balRow}>
           <div style={s.balChip}>💰 {user?.balance?.toFixed(2)}€</div>
-          {user?.bonusBalance > 0 &&
-            <div style={s.bonChip}>🎁 {user?.bonusBalance?.toFixed(2)}€</div>
-          }
+          {user?.bonusBalance > 0 && <div style={s.bonChip}>🎁 {user?.bonusBalance?.toFixed(2)}€</div>}
         </div>
       </div>
 
-      {/* ===== BANNER BONUS ===== */}
+      {/* ===== BANNER BONUS GLOBALE ===== */}
       {!user?.bonusUsed && (
         <div style={s.topBanner} onClick={() => setShowBonus(true)}>
-          🎁 <strong>BONUS 100%</strong> fino a 200€ sul primo deposito! <span style={{ color: '#facc15' }}>→</span>
+          🎁 <strong>BONUS 200%</strong> fino a 200€ sul primo deposito! <span style={{ color: '#facc15' }}>→</span>
         </div>
       )}
 
@@ -233,6 +197,17 @@ export default function App() {
       {/* ===== TAB SPORT ===== */}
       {tab === 'sport' && (
         <div>
+          {/* Banner bonus dentro sport */}
+          {!user?.bonusUsed && (
+            <div style={s.sportBonusBanner} onClick={() => setShowBonus(true)}>
+              <div>
+                <div style={s.sportBonusTitle}>🎁 BONUS BENVENUTO</div>
+                <div style={s.sportBonusAmt}>200% fino a 200€ sul primo deposito</div>
+              </div>
+              <span style={s.sportBonusArrow}>→</span>
+            </div>
+          )}
+
           <div style={s.card}>
             <p style={s.cardTitle}>Importo scommessa</p>
             <div style={s.row}>
@@ -247,8 +222,7 @@ export default function App() {
             </div>
             {user?.bonusBalance > 0 && (
               <label style={s.bonusToggle}>
-                <input type="checkbox" checked={useBonus}
-                  onChange={e => setUseBonus(e.target.checked)} />
+                <input type="checkbox" checked={useBonus} onChange={e => setUseBonus(e.target.checked)} />
                 <span> Usa bonus (🎁 {user.bonusBalance.toFixed(2)}€)</span>
               </label>
             )}
@@ -312,7 +286,7 @@ export default function App() {
           {!user?.bonusUsed && (
             <div style={s.bonusBannerCard}>
               <div style={{ fontSize: 40, textAlign: 'center' }}>🎁</div>
-              <div style={s.bonusBig2}>BONUS 100%</div>
+              <div style={s.bonusBig2}>BONUS 200%</div>
               <div style={s.bonusAmt2}>fino a 200€</div>
               <p style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', margin: '8px 0 16px' }}>
                 sul primo deposito in crypto
@@ -325,11 +299,11 @@ export default function App() {
           <div style={s.card}>
             <p style={s.cardTitle}>📋 Condizioni Bonus</p>
             <div style={s.tacBox}>
-              <p style={s.tacLine}>✅ Bonus 100% sul primo deposito, max 200€</p>
+              <p style={s.tacLine}>✅ Bonus 200% sul primo deposito, max 200€</p>
               <p style={s.tacLine}>✅ Accreditato automaticamente in crypto</p>
               <p style={s.tacLine}>✅ Quota minima per wagering: <strong>1.30</strong></p>
               <p style={s.tacLine}>✅ Devi giocare deposito + bonus su quote ≥1.30</p>
-              <p style={s.tacLine}>✅ Es: depositi 100€ → bonus 100€ → gioca 200€ totali</p>
+              <p style={s.tacLine}>✅ Es: depositi 100€ → bonus 200€ → gioca 300€ totali</p>
               <p style={s.tacLine}>✅ Bonus sbloccato = prelevabile</p>
               <p style={s.tacLine}>⚠️ Un solo bonus per account</p>
             </div>
@@ -343,9 +317,7 @@ export default function App() {
                 <div style={{ ...s.progFill, width: `${wagPct}%` }} />
               </div>
               <p style={s.wagPct}>{wagPct.toFixed(0)}% completato</p>
-              {wagPct >= 100 &&
-                <p style={s.bonusUnlocked}>🎉 Bonus sbloccato e prelevabile!</p>
-              }
+              {wagPct >= 100 && <p style={s.bonusUnlocked}>🎉 Bonus sbloccato e prelevabile!</p>}
             </div>
           )}
         </div>
@@ -356,10 +328,9 @@ export default function App() {
         <div>
           {!user?.bonusUsed && (
             <div style={s.topBanner} onClick={() => setShowBonus(true)}>
-              🎁 <strong>Primo deposito?</strong> Ricevi il 100% di bonus fino a 200€! <span style={{ color: '#facc15' }}>→</span>
+              🎁 <strong>Primo deposito?</strong> Ricevi il 200% di bonus fino a 200€! <span style={{ color: '#facc15' }}>→</span>
             </div>
           )}
-
           <div style={s.card}>
             <p style={s.cardTitle}>💳 Metodo di pagamento</p>
             <div style={s.cryptoGrid}>
@@ -380,7 +351,6 @@ export default function App() {
               ))}
             </div>
           </div>
-
           <div style={s.card}>
             <p style={s.cardTitle}>📥 Deposita {selectedCrypto}</p>
             <p style={s.depStep}>1️⃣ Copia l'indirizzo qui sotto</p>
@@ -389,16 +359,11 @@ export default function App() {
               navigator.clipboard.writeText(cryptoSelezionata.address);
               toast('📋 Indirizzo copiato!');
             }}>📋 Copia indirizzo</button>
-            <p style={{ ...s.small, marginTop: 12, color: '#facc15' }}>
-              {cryptoSelezionata.network}
-            </p>
+            <p style={{ ...s.small, marginTop: 12, color: '#facc15' }}>{cryptoSelezionata.network}</p>
             <p style={{ ...s.depStep, marginTop: 12 }}>2️⃣ Invia l'importo desiderato</p>
             <p style={s.depStep}>3️⃣ Manda l'hash della transazione al supporto con /supporto</p>
-            <p style={{ color: '#4ade80', fontSize: 12, marginTop: 10 }}>
-              ✅ Accredito entro 30-60 min dalla conferma blockchain
-            </p>
+            <p style={{ color: '#4ade80', fontSize: 12, marginTop: 10 }}>✅ Accredito entro 30-60 min dalla conferma blockchain</p>
           </div>
-
           <div style={s.card}>
             <p style={s.cardTitle}>💰 Saldo attuale</p>
             <p style={s.bigBalance}>{user?.balance?.toFixed(2)}€</p>
@@ -431,9 +396,7 @@ export default function App() {
             <button style={{ ...s.btnGreen, marginTop: 16 }} onClick={handleWithdraw}>
               💸 Richiedi prelievo
             </button>
-            <p style={{ ...s.small, color: '#facc15', marginTop: 12 }}>
-              ⚠️ Prelievi elaborati entro 24h lavorative
-            </p>
+            <p style={{ ...s.small, color: '#facc15', marginTop: 12 }}>⚠️ Prelievi elaborati entro 24h lavorative</p>
           </div>
         </div>
       )}
@@ -449,9 +412,7 @@ export default function App() {
             </div>
           </div>
         </div>
-        <p style={s.admText}>
-          Il gioco è vietato ai minori di 18 anni e può causare dipendenza patologica.
-        </p>
+        <p style={s.admText}>Il gioco è vietato ai minori di 18 anni e può causare dipendenza patologica.</p>
         <p style={s.admText}>Gioca responsabilmente. 18+</p>
       </div>
 
@@ -486,6 +447,10 @@ const s = {
   balChip: { background: '#065f46', color: '#4ade80', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 'bold' },
   bonChip: { background: '#713f12', color: '#facc15', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 'bold' },
   topBanner: { background: 'linear-gradient(90deg, #92400e, #b45309)', padding: '10px 16px', fontSize: 13, cursor: 'pointer', textAlign: 'center' },
+  sportBonusBanner: { background: 'linear-gradient(90deg, #1e3a5f, #713f12)', margin: '10px 12px', borderRadius: 12, padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', border: '1px solid #facc15' },
+  sportBonusTitle: { color: '#facc15', fontWeight: '900', fontSize: 15, letterSpacing: 1 },
+  sportBonusAmt: { color: 'white', fontSize: 12, marginTop: 3 },
+  sportBonusArrow: { color: '#facc15', fontSize: 22, fontWeight: 'bold' },
   tabBar: { display: 'flex', background: '#1e293b', borderBottom: '1px solid #334155', position: 'sticky', top: 49, zIndex: 99 },
   tabBtn: { flex: 1, padding: '8px 4px', background: 'transparent', color: '#64748b', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
   tabActive: { color: 'white', borderBottom: '2px solid #3b82f6' },
@@ -541,8 +506,8 @@ const s = {
   btnGreen: { width: '100%', padding: 14, background: 'linear-gradient(90deg, #059669, #0d9488)', color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 'bold', fontSize: 15, marginBottom: 8 },
   btnBlue: { width: '100%', padding: 12, background: '#1d4ed8', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 'bold', fontSize: 14 },
   btnGray: { width: '100%', padding: 10, background: '#334155', color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13 },
-  footer: { margin: '24px 12px 20px', padding: '16px', borderTop: '1px solid #334155', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
-  admBadge: { background: '#1e293b', border: '1px solid #1e3a8a', borderRadius: 12, padding: '12px 20px', display: 'flex', alignItems: 'center' },
+  footer: { margin: '24px 12px 20px', padding: 16, borderTop: '1px solid #334155', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
+  admBadge: { background: '#1e293b', border: '1px solid #1e3a8a', borderRadius: 12, padding: '12px 20px' },
   admLeft: { display: 'flex', alignItems: 'center', gap: 12 },
   admShield: { fontSize: 32 },
   admTitle: { color: '#1d4ed8', fontWeight: '900', fontSize: 20, letterSpacing: 3 },
