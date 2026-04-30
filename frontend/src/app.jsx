@@ -19,10 +19,10 @@ const SPORT_GROUPS = [
 ];
 
 const CRYPTO_METHODS = [
-  { symbol: 'USDT', name: 'Tether', icon: '💵', color: '#26a17b', desc: 'TRC20 / ERC20', address: 'INDIRIZZO_USDT_QUI', network: '⚠️ Rete: TRC20 (Tron) o ERC20 (Ethereum)' },
-  { symbol: 'USDC', name: 'USD Coin', icon: '🔵', color: '#2775ca', desc: 'ERC20 / Solana', address: 'INDIRIZZO_USDC_QUI', network: '⚠️ Rete: ERC20 (Ethereum) o Solana' },
-  { symbol: 'BTC', name: 'Bitcoin', icon: '₿', color: '#f7931a', desc: '~30 min', address: 'INDIRIZZO_BTC_QUI', network: '⚠️ Rete: Bitcoin mainnet' },
-  { symbol: 'ETH', name: 'Ethereum', icon: '⟠', color: '#627eea', desc: 'ERC20', address: 'INDIRIZZO_ETH_QUI', network: '⚠️ Rete: ERC20 (Ethereum)' },
+  { symbol: 'USDT', name: 'Tether', icon: '💵', color: '#26a17b', desc: 'TRC20', address: 'TT9toASfVp4svp6rjhcxNC8i3vqPtZp7Go', network: '⚠️ Rete: TRC20 (Tron) ONLY' },
+  { symbol: 'USDC', name: 'USD Coin', icon: '🔵', color: '#2775ca', desc: 'Solana', address: 'CyJxUvmK3GiMFgv3P8X3ndBg88jLdMcFP3A7ycPv2PgU', network: '⚠️ Rete: Solana ONLY' },
+  { symbol: 'BTC', name: 'Bitcoin', icon: '₿', color: '#f7931a', desc: '~30 min', address: 'bc1q6pwyh6nxu3q4v204y6p6tyfxys0lxcmgqsunwq', network: '⚠️ Rete: Bitcoin mainnet' },
+  { symbol: 'ETH', name: 'Ethereum', icon: '⟠', color: '#627eea', desc: 'ERC20', address: '0x226bFe26fA6cf2318Aa33a585BDe8cc7dd562Ef9', network: '⚠️ Rete: ERC20 (Ethereum)' },
 ];
 
 export default function App() {

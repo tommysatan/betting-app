@@ -271,7 +271,13 @@ bot.onText(/\/saldo/, async (msg) => {
 
 bot.onText(/\/supporto/, (msg) => {
   bot.sendMessage(msg.chat.id,
-    `🆘 *Supporto*\n\nPer depositi in USDT, USDC, BTC o ETH:\n1. Indica la crypto e l'importo\n2. Invia la transazione all'indirizzo indicato\n3. Mandaci l'hash della transazione`,
+    `🆘 *Supporto BetZone*\n\n` +
+    `Per accreditare un deposito inviaci:\n\n` +
+    `1️⃣ La crypto usata (USDT/USDC/BTC/ETH)\n` +
+    `2️⃣ L'importo inviato\n` +
+    `3️⃣ L'hash della transazione\n\n` +
+    `✅ Accrediteremo il saldo entro 30-60 minuti.\n\n` +
+    `📩 Contatto admin: @thecrowreal`,
     { parse_mode: 'Markdown' }
   );
 });
